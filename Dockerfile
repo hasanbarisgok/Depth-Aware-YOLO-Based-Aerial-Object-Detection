@@ -10,6 +10,12 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
+    libgl1 \
+    libx11-6 \
+    libxext6 \
+    libsm6 \
+    libxrender1 \
+    libxcb1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements-railway.txt ./requirements-railway.txt
