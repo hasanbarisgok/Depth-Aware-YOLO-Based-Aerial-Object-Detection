@@ -134,6 +134,25 @@ The `/predict` response includes:
 - `detections`: class id, class name, confidence, and bounding box coordinates
 - `annotated_image_base64`: optional rendered prediction image for direct frontend display
 
+### Railway Deployment
+
+The API is prepared for Railway deployment with:
+
+- `Procfile`
+- `nixpacks.toml`
+- `requirements-railway.txt`
+
+Recommended Railway environment variables:
+
+- `MODEL_WEIGHTS=models/aod4_total50_best.pt`
+- `CORS_ORIGINS=https://your-frontend-domain.com`
+
+If you want to allow multiple frontend origins, use a comma-separated value:
+
+```text
+CORS_ORIGINS=https://your-frontend-domain.com,https://www.your-frontend-domain.com
+```
+
 ## Test Assets
 
 This repository includes representative labeled test samples for all four classes:

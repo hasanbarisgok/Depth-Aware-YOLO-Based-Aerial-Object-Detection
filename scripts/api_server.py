@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import os
 from pathlib import Path
 from typing import Any
 
@@ -89,6 +90,15 @@ def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok", "model": weights_path.name}
 
+    @app.get("/")
+    def root() -> dict[str, str]:
+        return {
+            "service": "AOD4 Detection API",
+            "status": "ok",
+            "healthcheck": "/health",
+            "predict": "/predict",
+        }
+
     @app.post("/predict", response_model=PredictionResponse)
     async def predict(
         image: UploadFile = File(...),
@@ -150,13 +160,22 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def load_default_app() -> FastAPI:
+    weights = Path(os.getenv("MODEL_WEIGHTS", DEFAULT_WEIGHTS))
+    cors_env = os.getenv("CORS_ORIGINS", "*")
+    cors_origins = [origin.strip() for origin in cors_env.split(",") if origin.strip()]
+    return create_app(weights, cors_origins or ["*"])
+
+
+app = load_default_app()
+
+
 def main() -> None:
     args = parse_args()
-    app = create_app(args.weights, args.cors_origins)
 
     import uvicorn
 
-    uvicorn.run(app, host=args.host, port=args.port)
+    uvicorn.run(create_app(args.weights, args.cors_origins), host=args.host, port=args.port)
 
 
 if __name__ == "__main__":
