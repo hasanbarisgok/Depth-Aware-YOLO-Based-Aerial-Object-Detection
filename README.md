@@ -96,6 +96,26 @@ Prediction summary file:
 
 - `tests/summary.csv`
 
+## Sample Test Outputs
+
+Representative prediction outputs for each class are included below:
+
+### Airplane
+
+![Airplane Prediction](tests/predictions/airplane/prediction.jpg)
+
+### Bird
+
+![Bird Prediction](tests/predictions/bird/prediction.jpg)
+
+### Drone
+
+![Drone Prediction](tests/predictions/drone/prediction.jpg)
+
+### Helicopter
+
+![Helicopter Prediction](tests/predictions/helicopter/prediction.jpg)
+
 ## Additional Scripts
 
 - `scripts/prepare_dataset.py`: dataset structure generation
