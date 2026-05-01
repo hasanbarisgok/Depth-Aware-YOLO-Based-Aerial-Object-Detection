@@ -121,17 +121,21 @@ python scripts/train_yolo.py --model yolov8n.pt --epochs 50 --batch 16 --imgsz 6
 
 Final validation summary:
 
-- Precision: `0.94087`
-- Recall: `0.93935`
-- mAP50: `0.96537`
-- mAP50-95: `0.65577`
+| Metric | Value |
+| --- | ---: |
+| Precision | `0.94087` |
+| Recall | `0.93935` |
+| mAP50 | `0.96537` |
+| mAP50-95 | `0.65577` |
 
 Class-level performance summary:
 
-- airplane: `0.968 / 0.696`
-- bird: `0.973 / 0.694`
-- drone: `0.954 / 0.612`
-- helicopter: `0.968 / 0.622`
+| Class | mAP50 | mAP50-95 |
+| --- | ---: | ---: |
+| airplane | `0.968` | `0.696` |
+| bird | `0.973` | `0.694` |
+| drone | `0.954` | `0.612` |
+| helicopter | `0.968` | `0.622` |
 
 Detailed epoch-wise statistics are stored in:
 
