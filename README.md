@@ -1,37 +1,42 @@
 # Depth-Aware YOLO-Based Aerial Object Detection
 
-This repository contains the final project structure for a YOLOv8-based aerial object detection pipeline with pseudo-depth visualization support.
+This repository contains the final project structure for a YOLOv8-based aerial object detection pipeline with pseudo-depth visualization support. The system detects four aerial object classes and exposes both script-based inference and an API layer for frontend integration.
 
-## Project Credits
+## Live Demo
 
-**Hasan Barış GÖK** and **Halit AKCA**  
-M.Sc. Students  
-Department of Computer Engineering  
-Çukurova University
+The system is currently available online at:
+
+- [https://hasanbarisgok.com/aod4-demo](https://hasanbarisgok.com/aod4-demo)
+
+## Academic Context
 
 **Course:** Computer Vision (`CENG0038`)  
-**Instructor:** Assoc. Prof. Dr. Serkan KARTAL
+**Instructor:** Assoc. Prof. Dr. Serkan KARTAL  
+**Instructor Website:** [ceng.cu.edu.tr/skartal](https://ceng.cu.edu.tr/skartal/index.html)  
+**Instructor LinkedIn:** [serkan-kartal-39063b14a](https://www.linkedin.com/in/serkan-kartal-39063b14a/?locale=tr)
 
-### Authors
+**Project Team**
 
-**Hasan Barış GÖK**  
-AI-Augmented Frontend Engineer @ Sunflower Care e.V.  
-Email: `hasanbarisgok@gmail.com`  
-Website: [hasanbarisgok.com](https://hasanbarisgok.com)
+- Hasan Barış GÖK  
+  M.Sc. Student, Department of Computer Engineering, Çukurova University  
+  AI-Augmented Frontend Engineer @ Sunflower Care e.V.  
+  Email: `hasanbarisgok@gmail.com`  
+  Website: [hasanbarisgok.com](https://hasanbarisgok.com)
 
-**Halit AKCA**  
-Research Assistant @ ATU  
-Department of Artificial Intelligence Engineering  
-Email: `hakca@atu.edu.tr`  
-LinkedIn: [halit-akca-878072224](https://www.linkedin.com/in/halit-akca-878072224/)
+- Halit AKCA  
+  M.Sc. Student, Department of Computer Engineering, Çukurova University  
+  Research Assistant @ ATU, Department of Artificial Intelligence Engineering  
+  Email: `hakca@atu.edu.tr`  
+  LinkedIn: [halit-akca-878072224](https://www.linkedin.com/in/halit-akca-878072224/)
 
 ## Project Scope
 
-- Object detection with YOLOv8
+- YOLOv8-based aerial object detection
 - Single-image inference
 - Pseudo-depth map generation
 - Combined detection + depth demo
-- Final trained model and sample test outputs
+- FastAPI-based inference service
+- Final trained model and test artifacts
 
 ## Detected Classes
 
@@ -42,17 +47,55 @@ LinkedIn: [halit-akca-878072224](https://www.linkedin.com/in/halit-akca-87807222
 
 ## Repository Structure
 
-- `configs/`: configuration files
-- `scripts/`: training, inference, and test scripts
-- `models/`: final trained model weights
-- `results/`: final training statistics and sample output
-- `tests/`: labeled sample test data and corresponding predictions
-- `notebooks/`: Colab notebook
-- `requirements.txt`: Python dependencies
+```text
+AOD4_GitHub/
+├── configs/
+│   └── data.yaml
+├── models/
+│   ├── aod4_total50_best.pt
+│   └── aod4_total50_last.pt
+├── notebooks/
+│   └── aod4_colab.ipynb
+├── results/
+│   ├── aod4_total50_results.csv
+│   ├── aod4_total50_status.txt
+│   ├── FINAL_METRICS.md
+│   └── sample_detection.jpg
+├── scripts/
+│   ├── analyze_image_sizes.py
+│   ├── api_server.py
+│   ├── combined_demo.py
+│   ├── depth_map_demo.py
+│   ├── detect_image.py
+│   ├── prepare_dataset.py
+│   ├── run_labeled_test_set.py
+│   ├── run_sample_tests.py
+│   └── train_yolo.py
+├── tests/
+│   ├── data/
+│   │   ├── airplane/
+│   │   ├── bird/
+│   │   ├── drone/
+│   │   └── helicopter/
+│   ├── predictions/
+│   │   ├── airplane/
+│   │   ├── bird/
+│   │   ├── drone/
+│   │   └── helicopter/
+│   ├── README.md
+│   └── summary.csv
+├── .dockerignore
+├── .gitignore
+├── Dockerfile
+├── README.md
+├── README_DATASET.md
+├── requirements.txt
+└── requirements-railway.txt
+```
 
 ## Training Setup
 
-The final project is organized as a standard 50-epoch YOLOv8 training workflow.
+The final project is presented as a standard 50-epoch YOLOv8 training workflow.
 
 Core training configuration:
 
@@ -71,8 +114,8 @@ python scripts/train_yolo.py --model yolov8n.pt --epochs 50 --batch 16 --imgsz 6
 
 ## Final Model
 
-- `models/aod4_total50_best.pt`: main final model
-- `models/aod4_total50_last.pt`: last checkpoint
+- `models/aod4_total50_best.pt`: primary final model
+- `models/aod4_total50_last.pt`: last saved checkpoint
 
 ## Final Metrics
 
@@ -104,9 +147,9 @@ python scripts/detect_image.py --image "tests/data/drone/input.jpg" --weights "m
 
 ## API
 
-The repository also includes a small FastAPI server for frontend integration.
+The repository includes a FastAPI-based inference service for frontend integration.
 
-Install dependencies and run the API:
+Install dependencies and run the API locally:
 
 ```powershell
 python -m venv .venv
@@ -117,8 +160,9 @@ python scripts/api_server.py --weights "models/aod4_total50_best.pt" --host 127.
 
 Available endpoints:
 
-- `GET /health`: basic health check
-- `POST /predict`: upload an image and receive detections as JSON
+- `GET /`
+- `GET /health`
+- `POST /predict`
 
 Example `curl` request:
 
@@ -134,7 +178,7 @@ The `/predict` response includes:
 - `detections`: class id, class name, confidence, and bounding box coordinates
 - `annotated_image_base64`: optional rendered prediction image for direct frontend display
 
-### Railway Deployment
+## Railway Deployment
 
 The API is prepared for Railway deployment with a dedicated Docker-based runtime that only includes:
 
@@ -209,6 +253,7 @@ Representative prediction outputs for each class are included below:
 - `scripts/detect_image.py`: single-image detection
 - `scripts/depth_map_demo.py`: pseudo-depth generation
 - `scripts/combined_demo.py`: combined detection + depth output
+- `scripts/analyze_image_sizes.py`: dataset image size analysis
 - `scripts/run_sample_tests.py`: labeled sample test execution
 - `scripts/run_labeled_test_set.py`: full labeled test-set evaluation utility
 
@@ -216,7 +261,7 @@ Representative prediction outputs for each class are included below:
 
 The original dataset source used for this project can be found here:
 
-- https://data.mendeley.com/datasets/cd5z895tr2/1
+- [Mendeley Data](https://data.mendeley.com/datasets/cd5z895tr2/1)
 
 ## Note
 
