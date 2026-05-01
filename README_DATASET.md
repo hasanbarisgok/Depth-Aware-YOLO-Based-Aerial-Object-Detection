@@ -2,6 +2,10 @@
 
 This repository does not include the full training dataset.
 
+Original dataset source:
+
+- https://data.mendeley.com/datasets/cd5z895tr2/1
+
 Included:
 
 - representative labeled test samples

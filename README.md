@@ -106,6 +106,12 @@ Prediction summary file:
 - `scripts/run_sample_tests.py`: labeled sample test execution
 - `scripts/run_labeled_test_set.py`: full labeled test-set evaluation utility
 
+## Dataset Source
+
+The original dataset source used for this project can be found here:
+
+- https://data.mendeley.com/datasets/cd5z895tr2/1
+
 ## Note
 
 The full training dataset is intentionally not included in this repository to keep the project GitHub-friendly. Representative labeled test samples and final result artifacts are included instead.
