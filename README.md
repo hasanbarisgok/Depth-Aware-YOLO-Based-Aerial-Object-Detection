@@ -79,6 +79,38 @@ Example usage:
 python scripts/detect_image.py --image "tests/data/drone/input.jpg" --weights "models/aod4_total50_best.pt" --output "results/example_detection.jpg"
 ```
 
+## API
+
+The repository also includes a small FastAPI server for frontend integration.
+
+Install dependencies and run the API:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python scripts/api_server.py --weights "models/aod4_total50_best.pt" --host 127.0.0.1 --port 8000
+```
+
+Available endpoints:
+
+- `GET /health`: basic health check
+- `POST /predict`: upload an image and receive detections as JSON
+
+Example `curl` request:
+
+```powershell
+curl -X POST "http://127.0.0.1:8000/predict" `
+  -F "image=@tests/data/drone/input.jpg" `
+  -F "conf=0.25" `
+  -F "render=true"
+```
+
+The `/predict` response includes:
+
+- `detections`: class id, class name, confidence, and bounding box coordinates
+- `annotated_image_base64`: optional rendered prediction image for direct frontend display
+
 ## Test Assets
 
 This repository includes representative labeled test samples for all four classes:
