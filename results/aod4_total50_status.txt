@@ -1,0 +1,5 @@
+run_name=aod4_total50_from13
+completed_epoch=50
+target_total_epoch=50
+base_completed_epoch=13
+run_dir=/content/project/runs/detect/runs/aod4_total50_from13

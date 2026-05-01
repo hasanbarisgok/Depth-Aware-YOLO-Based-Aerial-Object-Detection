@@ -1,0 +1,111 @@
+# Depth-Aware YOLO-Based Aerial Object Detection
+
+This repository contains the final project structure for a YOLOv8-based aerial object detection pipeline with pseudo-depth visualization support.
+
+## Project Scope
+
+- Object detection with YOLOv8
+- Single-image inference
+- Pseudo-depth map generation
+- Combined detection + depth demo
+- Final trained model and sample test outputs
+
+## Detected Classes
+
+- airplane
+- bird
+- drone
+- helicopter
+
+## Repository Structure
+
+- `configs/`: configuration files
+- `scripts/`: training, inference, and test scripts
+- `models/`: final trained model weights
+- `results/`: final training statistics and sample output
+- `tests/`: labeled sample test data and corresponding predictions
+- `notebooks/`: Colab notebook
+- `requirements.txt`: Python dependencies
+
+## Training Setup
+
+The final project is organized as a standard 50-epoch YOLOv8 training workflow.
+
+Core training configuration:
+
+- model: `yolov8n`
+- epochs: `50`
+- image size: `640`
+- batch size: `16`
+- device: `GPU`
+- classes: `4`
+
+Main training command:
+
+```powershell
+python scripts/train_yolo.py --model yolov8n.pt --epochs 50 --batch 16 --imgsz 640
+```
+
+## Final Model
+
+- `models/aod4_total50_best.pt`: main final model
+- `models/aod4_total50_last.pt`: last checkpoint
+
+## Final Metrics
+
+Final validation summary:
+
+- Precision: `0.94087`
+- Recall: `0.93935`
+- mAP50: `0.96537`
+- mAP50-95: `0.65577`
+
+Class-level performance summary:
+
+- airplane: `0.968 / 0.696`
+- bird: `0.973 / 0.694`
+- drone: `0.954 / 0.612`
+- helicopter: `0.968 / 0.622`
+
+Detailed epoch-wise statistics are stored in:
+
+- `results/aod4_total50_results.csv`
+
+## Inference
+
+Example usage:
+
+```powershell
+python scripts/detect_image.py --image "tests/data/drone/input.jpg" --weights "models/aod4_total50_best.pt" --output "results/example_detection.jpg"
+```
+
+## Test Assets
+
+This repository includes representative labeled test samples for all four classes:
+
+- `tests/data/airplane`
+- `tests/data/bird`
+- `tests/data/drone`
+- `tests/data/helicopter`
+
+Predicted outputs for those same test samples are stored under:
+
+- `tests/predictions/`
+
+Prediction summary file:
+
+- `tests/summary.csv`
+
+## Additional Scripts
+
+- `scripts/prepare_dataset.py`: dataset structure generation
+- `scripts/train_yolo.py`: training
+- `scripts/detect_image.py`: single-image detection
+- `scripts/depth_map_demo.py`: pseudo-depth generation
+- `scripts/combined_demo.py`: combined detection + depth output
+- `scripts/run_sample_tests.py`: labeled sample test execution
+- `scripts/run_labeled_test_set.py`: full labeled test-set evaluation utility
+
+## Note
+
+The full training dataset is intentionally not included in this repository to keep the project GitHub-friendly. Representative labeled test samples and final result artifacts are included instead.

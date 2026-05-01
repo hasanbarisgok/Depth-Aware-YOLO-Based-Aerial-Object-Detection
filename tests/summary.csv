@@ -1,0 +1,5 @@
+image,predicted_class,confidence,x1,y1,x2,y2
+20190925_101846_1_1_000_jpg.rf.497f3eb572bec39e6856f75fc88b3d1b.jpg,drone,0.861127,357,514,463,628
+a-n-v-e-s-h-aeVUUYeGNU4-unsplash_jpg.rf.1f391aa251dcf5078f36911a209be801.jpg,bird,0.889410,292,472,624,612
+V_AIRPLANE_0011_073_png_jpg.rf.294b5a709d7a636cc77bc24ff7e990b5.jpg,airplane,0.796682,428,377,488,429
+V_HELICOPTER_001225_168_png_jpg.rf.c38ffe3f31b8bba1962235b46d62dd85.jpg,helicopter,0.821964,464,295,747,581
