@@ -2,6 +2,29 @@
 
 This repository contains the final project structure for a YOLOv8-based aerial object detection pipeline with pseudo-depth visualization support.
 
+## Project Credits
+
+**Hasan Barış GÖK** and **Halit AKCA**  
+M.Sc. Students  
+Department of Computer Engineering  
+Çukurova University
+
+**Course:** Computer Vision (`CENG0038`)  
+**Instructor:** Assoc. Prof. Dr. Serkan KARTAL
+
+### Authors
+
+**Hasan Barış GÖK**  
+AI-Augmented Frontend Engineer @ Sunflower Care e.V.  
+Email: `hasanbarisgok@gmail.com`  
+Website: [hasanbarisgok.com](https://hasanbarisgok.com)
+
+**Halit AKCA**  
+Research Assistant @ ATU  
+Department of Artificial Intelligence Engineering  
+Email: `hakca@atu.edu.tr`  
+LinkedIn: [halit-akca-878072224](https://www.linkedin.com/in/halit-akca-878072224/)
+
 ## Project Scope
 
 - Object detection with YOLOv8
