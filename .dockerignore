@@ -1,0 +1,8 @@
+*
+!.dockerignore
+!Dockerfile
+!requirements-railway.txt
+!scripts/
+!scripts/api_server.py
+!models/
+!models/aod4_total50_best.pt

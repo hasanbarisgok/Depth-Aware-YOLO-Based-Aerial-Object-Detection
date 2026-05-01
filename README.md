@@ -136,10 +136,16 @@ The `/predict` response includes:
 
 ### Railway Deployment
 
-The API is prepared for Railway deployment with:
+The API is prepared for Railway deployment with a dedicated Docker-based runtime that only includes:
 
-- `Procfile`
-- `nixpacks.toml`
+- the FastAPI server
+- the final trained detection model
+- minimal CPU inference dependencies
+
+Deployment files:
+
+- `Dockerfile`
+- `.dockerignore`
 - `requirements-railway.txt`
 
 Recommended Railway environment variables:
@@ -152,6 +158,12 @@ If you want to allow multiple frontend origins, use a comma-separated value:
 ```text
 CORS_ORIGINS=https://your-frontend-domain.com,https://www.your-frontend-domain.com
 ```
+
+Notes:
+
+- Railway should automatically detect the `Dockerfile`.
+- This deployment path excludes notebooks, training utilities, test folders, and non-essential assets from the container image.
+- The service is optimized for CPU inference only.
 
 ## Test Assets
 
