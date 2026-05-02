@@ -9,7 +9,7 @@ from typing import Any
 import cv2
 import numpy as np
 from PIL import Image
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -21,7 +21,7 @@ except ImportError:
     from depth_overlay import draw_depth_colored_detections, normalize_depth_map
 
 
-DEFAULT_WEIGHTS = Path("models/aod4_total50_best.pt")
+DEFAULT_WEIGHTS = Path("models/obb_ha_hb_best.pt")
 DEFAULT_DEPTH_MODEL = "depth-anything/Depth-Anything-V2-Small-hf"
 _DEPTH_ESTIMATORS: dict[str, Any] = {}
 
@@ -31,6 +31,7 @@ class DetectionItem(BaseModel):
     class_name: str
     confidence: float
     bbox_xyxy: list[int]
+    polygon_xy: list[list[int]] | None = None
 
 
 class PredictionResponse(BaseModel):
@@ -40,6 +41,11 @@ class PredictionResponse(BaseModel):
     detections: list[DetectionItem]
     annotated_image_base64: str | None = None
     annotated_image_mime: str | None = None
+    depth_image_base64: str | None = None
+    depth_image_mime: str | None = None
+    combined_image_base64: str | None = None
+    combined_image_mime: str | None = None
+    depth_rendered: bool = False
 
 
 def encode_jpeg_base64(image_bgr: np.ndarray) -> str:
@@ -59,16 +65,25 @@ def decode_uploaded_image(file_bytes: bytes) -> np.ndarray:
 
 def normalize_detections(result: Any, class_names: dict[int, str]) -> list[DetectionItem]:
     detections: list[DetectionItem] = []
-    for box in result.boxes:
+    obb = getattr(result, "obb", None)
+    boxes = obb if obb is not None else result.boxes
+    if boxes is None:
+        return detections
+
+    for box in boxes:
         class_id = int(box.cls[0].item())
         confidence = float(box.conf[0].item())
-        x1, y1, x2, y2 = [int(value) for value in box.xyxy[0].tolist()]
+        x1, y1, x2, y2 = [int(round(value)) for value in box.xyxy[0].tolist()]
+        polygon_xy = None
+        if obb is not None and hasattr(box, "xyxyxyxy"):
+            polygon_xy = [[int(round(x)), int(round(y))] for x, y in box.xyxyxyxy[0].tolist()]
         detections.append(
             DetectionItem(
                 class_id=class_id,
                 class_name=class_names[class_id],
                 confidence=confidence,
                 bbox_xyxy=[x1, y1, x2, y2],
+                polygon_xy=polygon_xy,
             )
         )
     return detections
@@ -77,19 +92,71 @@ def normalize_detections(result: Any, class_names: dict[int, str]) -> list[Detec
 def get_depth_estimator(model_name: str) -> Any:
     if model_name not in _DEPTH_ESTIMATORS:
         try:
+            import torch  # noqa: F401
             from transformers import pipeline
         except ImportError as exc:
-            raise RuntimeError("Depth rendering requires the transformers package.") from exc
-        _DEPTH_ESTIMATORS[model_name] = pipeline(task="depth-estimation", model=model_name)
+            raise RuntimeError("Depth rendering requires the transformers and torch packages.") from exc
+        _DEPTH_ESTIMATORS[model_name] = pipeline(
+            task="depth-estimation",
+            model=model_name,
+            framework="pt",
+            device=-1,
+        )
     return _DEPTH_ESTIMATORS[model_name]
 
 
-def render_depth_colored_image(image_bgr: np.ndarray, result: Any, class_names: dict[int, str], model_name: str) -> np.ndarray:
+def cors_error_headers(request: Request, allowed_origins: list[str]) -> dict[str, str]:
+    origin = request.headers.get("origin")
+    if not origin:
+        return {}
+
+    if "*" in allowed_origins or origin in allowed_origins:
+        return {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Vary": "Origin",
+        }
+
+    return {}
+
+
+def make_title_panel(image_bgr: np.ndarray, title: str) -> np.ndarray:
+    title_height = max(56, round(image_bgr.shape[0] * 0.07))
+    panel = np.full((image_bgr.shape[0] + title_height, image_bgr.shape[1], 3), 255, dtype=np.uint8)
+    panel[title_height:, :] = image_bgr
+
+    font_scale = max(0.8, min(image_bgr.shape[:2]) / 520)
+    thickness = max(2, round(font_scale * 2))
+    text_size, _ = cv2.getTextSize(title, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+    text_x = max(0, (image_bgr.shape[1] - text_size[0]) // 2)
+    text_y = max(text_size[1] + 8, (title_height + text_size[1]) // 2)
+    cv2.putText(panel, title, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 0), thickness, cv2.LINE_AA)
+    return panel
+
+
+def build_combined_demo_image(original_bgr: np.ndarray, detected_bgr: np.ndarray, depth_bgr: np.ndarray) -> np.ndarray:
+    panels = [
+        make_title_panel(original_bgr, "Original"),
+        make_title_panel(detected_bgr, "YOLO Detection + pDepth Color"),
+        make_title_panel(depth_bgr, "Pseudo-depth"),
+    ]
+    return cv2.hconcat(panels)
+
+
+def render_depth_outputs(
+    image_bgr: np.ndarray,
+    result: Any,
+    class_names: dict[int, str],
+    model_name: str,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     estimator = get_depth_estimator(model_name)
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
     depth_prediction = estimator(Image.fromarray(image_rgb))
     depth_normalized = normalize_depth_map(depth_prediction["depth"], image_bgr.shape[:2])
-    return draw_depth_colored_detections(image_bgr, result, depth_normalized, class_names)
+    detected_bgr = draw_depth_colored_detections(image_bgr, result, depth_normalized, class_names)
+    depth_bgr = cv2.applyColorMap(depth_normalized, cv2.COLORMAP_INFERNO)
+    combined_bgr = build_combined_demo_image(image_bgr, detected_bgr, depth_bgr)
+    return detected_bgr, depth_bgr, combined_bgr
 
 
 def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
@@ -151,9 +218,23 @@ def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
 
         annotated_image_base64 = None
         annotated_image_mime = None
+        depth_image_base64 = None
+        depth_image_mime = None
+        combined_image_base64 = None
+        combined_image_mime = None
+        depth_rendered = False
         if render:
             if render_depth:
-                annotated_image = render_depth_colored_image(image_bgr, result, model.names, depth_model)
+                try:
+                    detected_image, depth_image, combined_image = render_depth_outputs(image_bgr, result, model.names, depth_model)
+                    annotated_image = combined_image
+                    depth_image_base64 = encode_jpeg_base64(depth_image)
+                    depth_image_mime = "image/jpeg"
+                    combined_image_base64 = encode_jpeg_base64(combined_image)
+                    combined_image_mime = "image/jpeg"
+                    depth_rendered = True
+                except Exception:
+                    annotated_image = result.plot()
             else:
                 annotated_image = result.plot()
             annotated_image_base64 = encode_jpeg_base64(annotated_image)
@@ -167,11 +248,20 @@ def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
             detections=detections,
             annotated_image_base64=annotated_image_base64,
             annotated_image_mime=annotated_image_mime,
+            depth_image_base64=depth_image_base64,
+            depth_image_mime=depth_image_mime,
+            combined_image_base64=combined_image_base64,
+            combined_image_mime=combined_image_mime,
+            depth_rendered=depth_rendered,
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_exception_handler(_, exc: Exception) -> JSONResponse:
-        return JSONResponse(status_code=500, content={"detail": f"Internal server error: {exc}"})
+    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Internal server error: {exc}"},
+            headers=cors_error_headers(request, allowed_origins),
+        )
 
     return app
 
