@@ -101,6 +101,30 @@ The full epoch log is stored in:
 results/obb_ha_hb/metrics/results.csv
 ```
 
+## Dataset Overview
+
+The full training dataset is not included in this repository, but the final dataset distribution plots are preserved under `results/dataset_distribution/`. These charts summarize the train/validation/test split balance and class coverage used during the project workflow.
+
+Dataset split totals:
+
+![Dataset split totals](results/dataset_distribution/split_totals.png)
+
+Images containing each class by split:
+
+![Class image distribution](results/dataset_distribution/class_images_distribution.png)
+
+Object instances by class and split:
+
+![Class instance distribution](results/dataset_distribution/class_instances_distribution.png)
+
+These figures can be regenerated from a prepared YOLO dataset with:
+
+```powershell
+python scripts/analyze_split_distribution.py `
+  --dataset-root "dataset" `
+  --output-dir "results/dataset_distribution"
+```
+
 ## Repository Layout
 
 ```text

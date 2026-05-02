@@ -12,6 +12,7 @@ Included:
 - final model weights
 - final metrics
 - example prediction outputs
+- dataset distribution visualizations under `results/dataset_distribution/`
 
 Not included:
 
@@ -41,3 +42,11 @@ Class mapping:
 - 1: bird
 - 2: drone
 - 3: helicopter
+
+Dataset distribution plots:
+
+```text
+results/dataset_distribution/split_totals.png
+results/dataset_distribution/class_images_distribution.png
+results/dataset_distribution/class_instances_distribution.png
+```
