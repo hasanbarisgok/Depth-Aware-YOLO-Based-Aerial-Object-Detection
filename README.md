@@ -148,9 +148,25 @@ Frontend example:
 
 ![Frontend demo result](docs/assets/frontend-demo-result.png)
 
-Offline combined pseudo-depth example:
+Offline combined pseudo-depth examples:
 
-![Pseudo-depth combined demo](docs/assets/pseudo-depth-combined-demo.png)
+Each example is generated with `scripts/combined_demo.py` using the current `models/obb_ha_hb_best.pt` checkpoint. The panels show the original image, OBB detection with pseudo-depth-colored rendering, and the standalone pseudo-depth heatmap.
+
+### Drone
+
+![Drone pseudo-depth example](docs/assets/pseudo-depth-drone-example.png)
+
+### Airplane
+
+![Airplane pseudo-depth example](docs/assets/pseudo-depth-airplane-example.png)
+
+### Helicopter
+
+![Helicopter pseudo-depth example](docs/assets/pseudo-depth-helicopter-example.png)
+
+### Bird
+
+![Bird pseudo-depth example](docs/assets/pseudo-depth-bird-example.png)
 
 Training curves and validation previews are under:
 
