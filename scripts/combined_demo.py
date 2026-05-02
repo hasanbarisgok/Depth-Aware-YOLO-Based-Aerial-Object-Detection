@@ -5,10 +5,14 @@ from pathlib import Path
 
 import cv2
 import matplotlib.pyplot as plt
-import numpy as np
 from PIL import Image
 from transformers import pipeline
 from ultralytics import YOLO
+
+try:
+    from scripts.depth_overlay import draw_depth_colored_detections, normalize_depth_map
+except ImportError:
+    from depth_overlay import draw_depth_colored_detections, normalize_depth_map
 
 
 def main() -> None:
@@ -27,12 +31,12 @@ def main() -> None:
 
     detector = YOLO(str(args.weights))
     detection = detector.predict(source=str(args.image), conf=args.conf, verbose=False)[0]
-    detected_rgb = cv2.cvtColor(detection.plot(), cv2.COLOR_BGR2RGB)
 
     estimator = pipeline(task="depth-estimation", model=args.depth_model)
     depth_prediction = estimator(Image.open(args.image).convert("RGB"))
-    depth = np.array(depth_prediction["depth"])
-    depth_normalized = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    depth_normalized = normalize_depth_map(depth_prediction["depth"], original_bgr.shape[:2])
+    detected_bgr = draw_depth_colored_detections(original_bgr, detection, depth_normalized, detector.names)
+    detected_rgb = cv2.cvtColor(detected_bgr, cv2.COLOR_BGR2RGB)
     depth_colormap = cv2.applyColorMap(depth_normalized, cv2.COLORMAP_INFERNO)
     depth_rgb = cv2.cvtColor(depth_colormap, cv2.COLOR_BGR2RGB)
 
@@ -41,7 +45,7 @@ def main() -> None:
     axes[0].imshow(original_rgb)
     axes[0].set_title("Original")
     axes[1].imshow(detected_rgb)
-    axes[1].set_title("YOLO Detection")
+    axes[1].set_title("YOLO Detection + pDepth Color")
     axes[2].imshow(depth_rgb)
     axes[2].set_title("Pseudo-depth")
     for axis in axes:
@@ -51,11 +55,6 @@ def main() -> None:
     plt.close(fig)
 
     print(f"Saved combined demo to: {args.output}")
-    for box in detection.boxes:
-        cls_id = int(box.cls[0].item())
-        conf = float(box.conf[0].item())
-        x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
-        print(f"{detector.names[cls_id]} | conf={conf:.4f} | bbox=[{x1}, {y1}, {x2}, {y2}]")
 
 
 if __name__ == "__main__":

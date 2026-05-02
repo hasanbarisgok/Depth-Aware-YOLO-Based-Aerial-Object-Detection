@@ -174,13 +174,16 @@ Example `curl` request:
 curl -X POST "http://127.0.0.1:8000/predict" `
   -F "image=@tests/data/drone/input.jpg" `
   -F "conf=0.25" `
-  -F "render=true"
+  -F "render=true" `
+  -F "render_depth=true"
 ```
 
 The `/predict` response includes:
 
 - `detections`: class id, class name, confidence, and bounding box coordinates
 - `annotated_image_base64`: optional rendered prediction image for direct frontend display
+
+When `render_depth=true` is provided, the rendered detection boxes are colored using the pseudo-depth map. No metric distance is returned.
 
 ## Railway Deployment
 

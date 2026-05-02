@@ -24,6 +24,7 @@ RUN python -m pip install --upgrade pip && \
     python -m pip install --no-cache-dir -r requirements-railway.txt
 
 COPY scripts/api_server.py ./scripts/api_server.py
+COPY scripts/depth_overlay.py ./scripts/depth_overlay.py
 COPY models/aod4_total50_best.pt ./models/aod4_total50_best.pt
 
 EXPOSE 8000

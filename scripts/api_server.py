@@ -8,14 +8,22 @@ from typing import Any
 
 import cv2
 import numpy as np
+from PIL import Image
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from ultralytics import YOLO
 
+try:
+    from scripts.depth_overlay import draw_depth_colored_detections, normalize_depth_map
+except ImportError:
+    from depth_overlay import draw_depth_colored_detections, normalize_depth_map
+
 
 DEFAULT_WEIGHTS = Path("models/aod4_total50_best.pt")
+DEFAULT_DEPTH_MODEL = "depth-anything/Depth-Anything-V2-Small-hf"
+_DEPTH_ESTIMATORS: dict[str, Any] = {}
 
 
 class DetectionItem(BaseModel):
@@ -66,6 +74,24 @@ def normalize_detections(result: Any, class_names: dict[int, str]) -> list[Detec
     return detections
 
 
+def get_depth_estimator(model_name: str) -> Any:
+    if model_name not in _DEPTH_ESTIMATORS:
+        try:
+            from transformers import pipeline
+        except ImportError as exc:
+            raise RuntimeError("Depth rendering requires the transformers package.") from exc
+        _DEPTH_ESTIMATORS[model_name] = pipeline(task="depth-estimation", model=model_name)
+    return _DEPTH_ESTIMATORS[model_name]
+
+
+def render_depth_colored_image(image_bgr: np.ndarray, result: Any, class_names: dict[int, str], model_name: str) -> np.ndarray:
+    estimator = get_depth_estimator(model_name)
+    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+    depth_prediction = estimator(Image.fromarray(image_rgb))
+    depth_normalized = normalize_depth_map(depth_prediction["depth"], image_bgr.shape[:2])
+    return draw_depth_colored_detections(image_bgr, result, depth_normalized, class_names)
+
+
 def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
     if not weights_path.exists():
         raise FileNotFoundError(f"Model weights not found: {weights_path}")
@@ -104,6 +130,8 @@ def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
         image: UploadFile = File(...),
         conf: float = Form(0.25),
         render: bool = Form(True),
+        render_depth: bool = Form(False),
+        depth_model: str = Form(DEFAULT_DEPTH_MODEL),
     ) -> PredictionResponse:
         if not (0.0 <= conf <= 1.0):
             raise HTTPException(status_code=400, detail="conf must be between 0.0 and 1.0")
@@ -124,7 +152,10 @@ def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
         annotated_image_base64 = None
         annotated_image_mime = None
         if render:
-            annotated_image = result.plot()
+            if render_depth:
+                annotated_image = render_depth_colored_image(image_bgr, result, model.names, depth_model)
+            else:
+                annotated_image = result.plot()
             annotated_image_base64 = encode_jpeg_base64(annotated_image)
             annotated_image_mime = "image/jpeg"
 
