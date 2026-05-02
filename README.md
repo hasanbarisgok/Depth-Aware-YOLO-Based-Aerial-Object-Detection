@@ -43,17 +43,57 @@ base model: yolo26m-obb.pt
 image size: 640
 batch size: 64
 planned epochs: 100
-final recorded epoch: 86
+completed epochs: 86
+best epoch: 71
+early stopping patience: 15
 ```
 
-Final recorded validation metrics:
+Training was run on Google Colab with an NVIDIA A100 GPU. The final run stopped through Ultralytics EarlyStopping after no validation improvement was observed for 15 consecutive epochs. The best checkpoint from epoch 71 was saved as `best.pt`, and both `best.pt` and `last.pt` were optimizer-stripped to 48.1 MB for inference/deployment.
+
+Final validation environment:
+
+```text
+Ultralytics: 8.4.46
+Python: 3.12.13
+PyTorch: 2.10.0+cu128
+GPU: NVIDIA A100-SXM4-40GB
+Training time: 5.450 hours
+Model summary: YOLO26m-obb, 142 fused layers, 21,200,987 parameters, 71.5 GFLOPs
+```
+
+Final validation metrics:
 
 | Metric | Value |
 | --- | ---: |
-| Precision | `0.97444` |
-| Recall | `0.97254` |
-| mAP50 | `0.98461` |
+| Precision | `0.976` |
+| Recall | `0.972` |
+| mAP50 | `0.987` |
 | mAP50-95 | `0.83686` |
+
+Per-class validation breakdown:
+
+| Class | Images | Instances | Precision | Recall | mAP50 | mAP50-95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| all | `4514` | `6369` | `0.976` | `0.972` | `0.987` | `0.837` |
+| airplane | `1119` | `1625` | `0.972` | `0.955` | `0.981` | `0.855` |
+| bird | `638` | `1557` | `0.971` | `0.966` | `0.990` | `0.877` |
+| drone | `1485` | `1602` | `0.978` | `0.981` | `0.983` | `0.804` |
+| helicopter | `1158` | `1585` | `0.985` | `0.985` | `0.993` | `0.814` |
+
+Validation speed on the A100 run:
+
+| Stage | Time per image |
+| --- | ---: |
+| Preprocess | `0.1 ms` |
+| Inference | `1.8 ms` |
+| Loss | `0.0 ms` |
+| Postprocess | `0.2 ms` |
+
+YOLO26m reference profile used for the final test context:
+
+| Model | Image Size | mAP50-95 | mAP50 | CPU ONNX Latency | A100 TensorRT Latency | Params (M) | FLOPs (B) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| YOLO26m | `640` | `53.1` | `52.5` | `220.0 +/- 1.4 ms` | `4.7 +/- 0.1 ms` | `20.4` | `68.2` |
 
 The full epoch log is stored in:
 
