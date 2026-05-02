@@ -21,7 +21,7 @@ except ImportError:
     from depth_overlay import draw_depth_colored_detections, normalize_depth_map
 
 
-DEFAULT_WEIGHTS = Path("models/aod4_total50_best.pt")
+DEFAULT_WEIGHTS = Path("models/obb_ha_hb_best.pt")
 DEFAULT_DEPTH_MODEL = "depth-anything/Depth-Anything-V2-Small-hf"
 _DEPTH_ESTIMATORS: dict[str, Any] = {}
 
@@ -31,6 +31,7 @@ class DetectionItem(BaseModel):
     class_name: str
     confidence: float
     bbox_xyxy: list[int]
+    polygon_xy: list[list[int]] | None = None
 
 
 class PredictionResponse(BaseModel):
@@ -64,16 +65,25 @@ def decode_uploaded_image(file_bytes: bytes) -> np.ndarray:
 
 def normalize_detections(result: Any, class_names: dict[int, str]) -> list[DetectionItem]:
     detections: list[DetectionItem] = []
-    for box in result.boxes:
+    obb = getattr(result, "obb", None)
+    boxes = obb if obb is not None else result.boxes
+    if boxes is None:
+        return detections
+
+    for box in boxes:
         class_id = int(box.cls[0].item())
         confidence = float(box.conf[0].item())
-        x1, y1, x2, y2 = [int(value) for value in box.xyxy[0].tolist()]
+        x1, y1, x2, y2 = [int(round(value)) for value in box.xyxy[0].tolist()]
+        polygon_xy = None
+        if obb is not None and hasattr(box, "xyxyxyxy"):
+            polygon_xy = [[int(round(x)), int(round(y))] for x, y in box.xyxyxyxy[0].tolist()]
         detections.append(
             DetectionItem(
                 class_id=class_id,
                 class_name=class_names[class_id],
                 confidence=confidence,
                 bbox_xyxy=[x1, y1, x2, y2],
+                polygon_xy=polygon_xy,
             )
         )
     return detections

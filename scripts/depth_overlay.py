@@ -51,7 +51,12 @@ def draw_depth_colored_detections(
     font_scale = max(0.45, min(height, width) / 1150)
     label_thickness = max(1, thickness - 1)
 
-    for box in result.boxes:
+    obb = getattr(result, "obb", None)
+    boxes = obb if obb is not None else result.boxes
+    if boxes is None:
+        return annotated
+
+    for box in boxes:
         class_id = int(box.cls[0].item())
         x1, y1, x2, y2 = [int(value) for value in box.xyxy[0].tolist()]
         x1 = max(0, min(x1, width - 1))
@@ -64,7 +69,13 @@ def draw_depth_colored_detections(
         crop = depth_normalized[y1:y2, x1:x2]
         color = color_for_depth(float(crop.mean()), float(low_threshold), float(high_threshold))
 
-        cv2.rectangle(annotated, (x1, y1), (x2, y2), color, thickness)
+        if obb is not None and hasattr(box, "xyxyxyxy"):
+            points = np.array(box.xyxyxyxy[0].tolist(), dtype=np.int32)
+            points[:, 0] = np.clip(points[:, 0], 0, width - 1)
+            points[:, 1] = np.clip(points[:, 1], 0, height - 1)
+            cv2.polylines(annotated, [points], isClosed=True, color=color, thickness=thickness)
+        else:
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), color, thickness)
 
         label = class_names.get(class_id, str(class_id))
         label_size, baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, label_thickness)
