@@ -1,174 +1,183 @@
 # Depth-Aware YOLO-Based Aerial Object Detection
 
-This repository contains the final project structure for a YOLOv8-based aerial object detection pipeline with pseudo-depth visualization support. The system detects four aerial object classes and exposes both script-based inference and an API layer for frontend integration.
+Depth-aware aerial object detection for four aerial classes: `airplane`, `bird`, `drone`, and `helicopter`.
+
+The current production path uses a YOLO OBB model for oriented detection and a pseudo-depth estimator for visualization. The FastAPI backend accepts a single image, runs object detection, optionally generates pseudo-depth, and returns frontend-ready Base64 image previews.
 
 ## Live Demo
 
-The system is currently available online at:
+- https://hasanbarisgok.com/aod4-demo
 
-- [https://hasanbarisgok.com/aod4-demo](https://hasanbarisgok.com/aod4-demo)
+## Project Highlights
+
+- YOLO OBB inference with polygon coordinates for oriented aerial objects
+- Optional pseudo-depth visualization using Depth Anything
+- FastAPI inference service for frontend integration
+- Railway-ready Docker deployment
+- Reproducible training scripts and curated final artifacts
+- Representative test samples and visual result assets included in the repo
 
 ## Academic Context
 
-**Course:** Computer Vision (`CENG0038`)  
-**Instructor:** Assoc. Prof. Dr. Serkan KARTAL  
-**Instructor Website:** [ceng.cu.edu.tr/skartal](https://ceng.cu.edu.tr/skartal/index.html)  
-**Instructor LinkedIn:** [serkan-kartal-39063b14a](https://www.linkedin.com/in/serkan-kartal-39063b14a/?locale=tr)
+Course: Computer Vision (`CENG0038`)  
+Instructor: Assoc. Prof. Dr. Serkan KARTAL
 
-**Project Team**
+Project team:
 
-- Hasan Barış GÖK  
-  M.Sc. Student, Department of Computer Engineering, Çukurova University  
-  AI-Augmented Frontend Engineer @ Sunflower Care e.V.  
-  Email: `hasanbarisgok@gmail.com`  
-  Website: [hasanbarisgok.com](https://hasanbarisgok.com)
+- Hasan Baris GOK, M.Sc. Student, Department of Computer Engineering, Cukurova University
+- Halit AKCA, M.Sc. Student, Department of Computer Engineering, Cukurova University
 
-- Halit AKCA  
-  M.Sc. Student, Department of Computer Engineering, Çukurova University  
-  Research Assistant @ ATU, Department of Artificial Intelligence Engineering  
-  Email: `hakca@atu.edu.tr`  
-  LinkedIn: [halit-akca-878072224](https://www.linkedin.com/in/halit-akca-878072224/)
+## Current Production Model
 
-## Project Scope
-
-- YOLOv8-based aerial object detection
-- Single-image inference
-- Pseudo-depth map generation
-- Combined detection + depth demo
-- FastAPI-based inference service
-- Final trained model and test artifacts
-
-## Detected Classes
-
-- airplane
-- bird
-- drone
-- helicopter
-
-## Repository Structure
+The current API deployment uses:
 
 ```text
-AOD4_GitHub/
-├── configs/
-│   └── data.yaml
-├── models/
-│   ├── aod4_total50_best.pt
-│   └── aod4_total50_last.pt
-├── notebooks/
-│   └── aod4_colab.ipynb
-├── results/
-│   ├── aod4_total50_results.csv
-│   ├── aod4_total50_status.txt
-│   ├── FINAL_METRICS.md
-│   └── sample_detection.jpg
-├── scripts/
-│   ├── analyze_image_sizes.py
-│   ├── api_server.py
-│   ├── combined_demo.py
-│   ├── depth_map_demo.py
-│   ├── detect_image.py
-│   ├── prepare_dataset.py
-│   ├── run_labeled_test_set.py
-│   ├── run_sample_tests.py
-│   └── train_yolo.py
-├── tests/
-│   ├── data/
-│   │   ├── airplane/
-│   │   ├── bird/
-│   │   ├── drone/
-│   │   └── helicopter/
-│   ├── predictions/
-│   │   ├── airplane/
-│   │   ├── bird/
-│   │   ├── drone/
-│   │   └── helicopter/
-│   ├── README.md
-│   └── summary.csv
-├── .dockerignore
-├── .gitignore
-├── Dockerfile
-├── README.md
-├── README_DATASET.md
-├── requirements.txt
-└── requirements-railway.txt
+models/obb_ha_hb_best.pt
 ```
 
-## Training Setup
+The checkpoint was trained as a YOLO OBB model with:
 
-The final project is presented as a standard 50-epoch YOLOv8 training workflow.
-
-Core training configuration:
-
-- model: `yolov8n`
-- epochs: `50`
-- image size: `640`
-- batch size: `16`
-- device: `GPU`
-- classes: `4`
-
-Main training command:
-
-```powershell
-python scripts/train_yolo.py --model yolov8n.pt --epochs 50 --batch 16 --imgsz 640
+```text
+task: obb
+base model: yolo26m-obb.pt
+image size: 640
+batch size: 64
+planned epochs: 100
+final recorded epoch: 86
 ```
 
-## Final Model
-
-- `models/aod4_total50_best.pt`: primary final model
-- `models/aod4_total50_last.pt`: last saved checkpoint
-
-## Final Metrics
-
-Final validation summary:
+Final recorded validation metrics:
 
 | Metric | Value |
 | --- | ---: |
-| Precision | `0.94087` |
-| Recall | `0.93935` |
-| mAP50 | `0.96537` |
-| mAP50-95 | `0.65577` |
+| Precision | `0.97444` |
+| Recall | `0.97254` |
+| mAP50 | `0.98461` |
+| mAP50-95 | `0.83686` |
 
-Class-level performance summary:
+The full epoch log is stored in:
 
-| Class | mAP50 | mAP50-95 |
-| --- | ---: | ---: |
-| airplane | `0.968` | `0.696` |
-| bird | `0.973` | `0.694` |
-| drone | `0.954` | `0.612` |
-| helicopter | `0.968` | `0.622` |
-
-Detailed epoch-wise statistics are stored in:
-
-- `results/aod4_total50_results.csv`
-
-## Inference
-
-Example usage:
-
-```powershell
-python scripts/detect_image.py --image "tests/data/drone/input.jpg" --weights "models/aod4_total50_best.pt" --output "results/example_detection.jpg"
+```text
+results/obb_ha_hb/metrics/results.csv
 ```
 
-## API
+## Repository Layout
 
-The repository includes a FastAPI-based inference service for frontend integration.
+```text
+AOD4_GitHub/
++-- configs/                         # legacy YOLO dataset config
++-- docs/
+|   +-- assets/                      # README/demo images
++-- models/
+|   +-- obb_ha_hb_best.pt            # production OBB checkpoint
+|   +-- obb_ha_hb_last.pt            # final OBB training checkpoint
+|   +-- aod4_total50_best.pt         # legacy axis-aligned YOLO checkpoint
+|   +-- aod4_total50_last.pt
++-- notebooks/
+|   +-- aod4_colab.ipynb
+|   +-- OBB_HA_HB_colab.ipynb
++-- OBB_HA_HB/
+|   +-- configs/                     # OBB training config
+|   +-- scripts/                     # OBB dataset prep and training scripts
+|   +-- README.md
++-- results/
+|   +-- obb_ha_hb/
+|   |   +-- metrics/                 # curves, confusion matrices, args, CSV
+|   |   +-- samples/                 # train/validation batch previews
+|   +-- dataset_distribution/        # dataset distribution plots
+|   +-- legacy YOLOv8 result files
++-- scripts/
+|   +-- api_server.py                # FastAPI inference API
+|   +-- depth_overlay.py             # pseudo-depth colored box/polygon rendering
+|   +-- combined_demo.py             # offline detection + depth visualization
+|   +-- depth_map_demo.py            # standalone pseudo-depth map generation
+|   +-- detect_image.py              # single-image CLI inference
+|   +-- run_sample_tests.py
+|   +-- run_labeled_test_set.py
+|   +-- analyze_image_sizes.py
+|   +-- analyze_split_distribution.py
++-- tests/                           # small representative labeled samples
++-- Dockerfile
++-- requirements.txt
++-- requirements-railway.txt
+```
 
-Install dependencies and run the API locally:
+## Visual Artifacts
+
+Frontend example:
+
+![Frontend demo result](docs/assets/frontend-demo-result.png)
+
+Offline combined pseudo-depth example:
+
+![Pseudo-depth combined demo](docs/assets/pseudo-depth-combined-demo.png)
+
+Training curves and validation previews are under:
+
+```text
+results/obb_ha_hb/metrics/
+results/obb_ha_hb/samples/
+```
+
+## Local Setup
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-python scripts/api_server.py --weights "models/aod4_total50_best.pt" --host 127.0.0.1 --port 8000
+```
+
+## Single-Image Inference
+
+```powershell
+python scripts/detect_image.py `
+  --image "tests/data/drone/input.jpg" `
+  --weights "models/obb_ha_hb_best.pt" `
+  --output "outputs/drone_obb_prediction.jpg"
+```
+
+The script supports both standard YOLO boxes and OBB results. For OBB models it prints both `bbox_xyxy` and polygon coordinates.
+
+## Pseudo-Depth Demo
+
+Generate the three-panel visualization used by the project demo:
+
+```powershell
+python scripts/combined_demo.py `
+  --image "tests/data/drone/input.jpg" `
+  --weights "models/obb_ha_hb_best.pt" `
+  --output "outputs/combined_depth_demo.png"
+```
+
+Generate only the pseudo-depth map:
+
+```powershell
+python scripts/depth_map_demo.py `
+  --image "tests/data/drone/input.jpg" `
+  --output "outputs/depth_map.png"
+```
+
+## API
+
+Run locally:
+
+```powershell
+python scripts/api_server.py `
+  --weights "models/obb_ha_hb_best.pt" `
+  --host 127.0.0.1 `
+  --port 8000
 ```
 
 Available endpoints:
 
-- `GET /`
-- `GET /health`
-- `POST /predict`
+```text
+GET  /
+GET  /health
+POST /predict
+```
 
-Example `curl` request:
+Example request:
 
 ```powershell
 curl -X POST "http://127.0.0.1:8000/predict" `
@@ -178,98 +187,85 @@ curl -X POST "http://127.0.0.1:8000/predict" `
   -F "render_depth=true"
 ```
 
-The `/predict` response includes:
+Important response fields:
 
-- `detections`: class id, class name, confidence, and bounding box coordinates
-- `annotated_image_base64`: optional rendered prediction image for direct frontend display
-
-When `render_depth=true` is provided, the rendered detection boxes are colored using the pseudo-depth map. No metric distance is returned.
+| Field | Description |
+| --- | --- |
+| `detections` | Class, confidence, axis-aligned `bbox_xyxy`, and optional OBB `polygon_xy` |
+| `annotated_image_base64` | Frontend-ready image. With `render_depth=true`, this is the combined preview when depth succeeds |
+| `depth_image_base64` | Standalone pseudo-depth heatmap when depth succeeds |
+| `combined_image_base64` | Three-panel `Original / Detection + pDepth / Pseudo-depth` preview |
+| `depth_rendered` | `true` when pseudo-depth finished successfully; `false` when the API falls back to normal YOLO rendering |
 
 ## Railway Deployment
 
-The API is prepared for Railway deployment with a dedicated Docker-based runtime that only includes:
+The Docker deployment is intentionally narrow: it copies only the API code, the depth overlay helper, and the production OBB checkpoints.
 
-- the FastAPI server
-- the final trained detection model
-- minimal CPU inference dependencies
+Production defaults:
 
-Deployment files:
-
-- `Dockerfile`
-- `.dockerignore`
-- `requirements-railway.txt`
+```text
+MODEL_WEIGHTS=models/obb_ha_hb_best.pt
+PORT=8000
+```
 
 Recommended Railway environment variables:
 
-- `MODEL_WEIGHTS=models/aod4_total50_best.pt`
-- `CORS_ORIGINS=https://your-frontend-domain.com`
-
-If you want to allow multiple frontend origins, use a comma-separated value:
-
 ```text
-CORS_ORIGINS=https://your-frontend-domain.com,https://www.your-frontend-domain.com
+CORS_ORIGINS=https://hasanbarisgok.com,https://www.hasanbarisgok.com
 ```
 
-Notes:
+The deployment dependencies are pinned in:
 
-- Railway should automatically detect the `Dockerfile`.
-- This deployment path excludes notebooks, training utilities, test folders, and non-essential assets from the container image.
-- The service is optimized for CPU inference only.
+```text
+requirements-railway.txt
+```
+
+The Railway runtime uses CPU PyTorch wheels and is configured for FastAPI via:
+
+```text
+Dockerfile
+```
+
+## OBB Training Flow
+
+OBB-specific training utilities live in:
+
+```text
+OBB_HA_HB/
+```
+
+See:
+
+```text
+OBB_HA_HB/README.md
+```
+
+The training artifacts from the final OBB run are stored in:
+
+```text
+results/obb_ha_hb/
+```
 
 ## Test Assets
 
-This repository includes representative labeled test samples for all four classes:
+Representative labeled samples are included under:
 
-- `tests/data/airplane`
-- `tests/data/bird`
-- `tests/data/drone`
-- `tests/data/helicopter`
+```text
+tests/data/
+tests/predictions/
+tests/summary.csv
+```
 
-Predicted outputs for those same test samples are stored under:
-
-- `tests/predictions/`
-
-Prediction summary file:
-
-- `tests/summary.csv`
-
-## Sample Test Outputs
-
-Representative prediction outputs for each class are included below:
-
-### Airplane
-
-![Airplane Prediction](tests/predictions/airplane/prediction.jpg)
-
-### Bird
-
-![Bird Prediction](tests/predictions/bird/prediction.jpg)
-
-### Drone
-
-![Drone Prediction](tests/predictions/drone/prediction.jpg)
-
-### Helicopter
-
-![Helicopter Prediction](tests/predictions/helicopter/prediction.jpg)
-
-## Additional Scripts
-
-- `scripts/prepare_dataset.py`: dataset structure generation
-- `scripts/train_yolo.py`: training
-- `scripts/detect_image.py`: single-image detection
-- `scripts/depth_map_demo.py`: pseudo-depth generation
-- `scripts/combined_demo.py`: combined detection + depth output
-- `scripts/analyze_image_sizes.py`: dataset image size analysis
-- `scripts/run_sample_tests.py`: labeled sample test execution
-- `scripts/run_labeled_test_set.py`: full labeled test-set evaluation utility
+These files are small, curated examples for local validation and README/demo usage. The full training dataset is intentionally not included in the repository.
 
 ## Dataset Source
 
-The original dataset source used for this project can be found here:
+Original dataset source:
 
-- [Mendeley Data](https://data.mendeley.com/datasets/cd5z895tr2/1)
+- https://data.mendeley.com/datasets/cd5z895tr2/1
 
-## Note
+## Notes
 
-The full training dataset is intentionally not included in this repository to keep the project GitHub-friendly. Representative labeled test samples and final result artifacts are included instead.
+- `models/aod4_total50_*.pt` and root-level legacy result files are retained as the earlier axis-aligned YOLOv8 baseline.
+- `models/obb_ha_hb_best.pt` is the current production checkpoint.
+- The API keeps `bbox_xyxy` for frontend compatibility and adds `polygon_xy` when the active model is OBB.

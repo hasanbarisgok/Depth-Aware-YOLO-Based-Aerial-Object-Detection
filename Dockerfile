@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PORT=8000 \
-    MODEL_WEIGHTS=models/aod4_total50_best.pt
+    MODEL_WEIGHTS=models/obb_ha_hb_best.pt
 
 WORKDIR /app
 
@@ -25,7 +25,8 @@ RUN python -m pip install --upgrade pip && \
 
 COPY scripts/api_server.py ./scripts/api_server.py
 COPY scripts/depth_overlay.py ./scripts/depth_overlay.py
-COPY models/aod4_total50_best.pt ./models/aod4_total50_best.pt
+COPY models/obb_ha_hb_best.pt ./models/obb_ha_hb_best.pt
+COPY models/obb_ha_hb_last.pt ./models/obb_ha_hb_last.pt
 
 EXPOSE 8000
 

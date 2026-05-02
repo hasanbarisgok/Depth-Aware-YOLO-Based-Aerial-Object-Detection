@@ -6,4 +6,5 @@
 !scripts/api_server.py
 !scripts/depth_overlay.py
 !models/
-!models/aod4_total50_best.pt
+!models/obb_ha_hb_best.pt
+!models/obb_ha_hb_last.pt

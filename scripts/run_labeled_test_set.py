@@ -30,15 +30,21 @@ def export_predictions_to_csv(results, output_csv: Path) -> None:
     output_csv.parent.mkdir(parents=True, exist_ok=True)
     with output_csv.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["image", "class_id", "class_name", "confidence", "x1", "y1", "x2", "y2"])
+        writer.writerow(["image", "class_id", "class_name", "confidence", "x1", "y1", "x2", "y2", "polygon_xy"])
         for result in results:
             image_name = Path(result.path).name
             names = result.names
-            for box in result.boxes:
+            boxes = result.obb if getattr(result, "obb", None) is not None else result.boxes
+            if boxes is None:
+                continue
+            for box in boxes:
                 cls_id = int(box.cls[0].item())
                 conf = float(box.conf[0].item())
                 x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
-                writer.writerow([image_name, cls_id, names[cls_id], f"{conf:.6f}", x1, y1, x2, y2])
+                polygon = ""
+                if getattr(result, "obb", None) is not None and hasattr(box, "xyxyxyxy"):
+                    polygon = ";".join(f"{int(x)}:{int(y)}" for x, y in box.xyxyxyxy[0].tolist())
+                writer.writerow([image_name, cls_id, names[cls_id], f"{conf:.6f}", x1, y1, x2, y2, polygon])
 
 
 def export_metrics(metrics, output_dir: Path) -> None:
