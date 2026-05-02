@@ -125,7 +125,7 @@ AOD4_GitHub/
 |   |   +-- metrics/                 # curves, confusion matrices, args, CSV
 |   |   +-- samples/                 # train/validation batch previews
 |   +-- dataset_distribution/        # dataset distribution plots
-|   +-- legacy YOLOv8 result files
+|   +-- yolov8_50epoch_baseline/     # earlier non-OBB YOLOv8 50-epoch baseline
 +-- scripts/
 |   +-- api_server.py                # FastAPI inference API
 |   +-- depth_overlay.py             # pseudo-depth colored box/polygon rendering
@@ -173,6 +173,12 @@ Training curves and validation previews are under:
 ```text
 results/obb_ha_hb/metrics/
 results/obb_ha_hb/samples/
+```
+
+Earlier non-OBB YOLOv8 50-epoch baseline artifacts are preserved separately under:
+
+```text
+results/yolov8_50epoch_baseline/
 ```
 
 ## Local Setup
@@ -322,6 +328,6 @@ Original dataset source:
 
 ## Notes
 
-- `models/aod4_total50_*.pt` and root-level legacy result files are retained as the earlier axis-aligned YOLOv8 baseline.
+- `models/aod4_total50_*.pt` and `results/yolov8_50epoch_baseline/` are retained as the earlier axis-aligned YOLOv8 50-epoch baseline.
 - `models/obb_ha_hb_best.pt` is the current production checkpoint.
 - The API keeps `bbox_xyxy` for frontend compatibility and adds `polygon_xy` when the active model is OBB.

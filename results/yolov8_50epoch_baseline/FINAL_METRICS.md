@@ -14,4 +14,4 @@ Per-class summary:
 - drone: `mAP50=0.954`, `mAP50-95=0.612`
 - helicopter: `mAP50=0.968`, `mAP50-95=0.622`
 
-The complete epoch-by-epoch values are stored in `aod4_total50_results.csv`.
+The complete epoch-by-epoch values are stored in `results/yolov8_50epoch_baseline/aod4_total50_results.csv`.
