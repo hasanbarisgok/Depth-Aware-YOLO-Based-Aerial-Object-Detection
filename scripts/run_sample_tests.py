@@ -38,11 +38,18 @@ def save_detection(model: YOLO, image_path: Path, output_path: Path, conf: float
     cv2.imwrite(str(output_path), plotted)
 
     rows: list[list[str]] = []
-    for box in result.boxes:
+    boxes = result.obb if getattr(result, "obb", None) is not None else result.boxes
+    if boxes is None:
+        return rows
+
+    for box in boxes:
         cls_id = int(box.cls[0].item())
         score = float(box.conf[0].item())
         x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
-        rows.append([image_path.name, CLASS_NAMES.get(cls_id, str(cls_id)), f"{score:.6f}", x1, y1, x2, y2])
+        polygon = ""
+        if getattr(result, "obb", None) is not None and hasattr(box, "xyxyxyxy"):
+            polygon = ";".join(f"{int(x)}:{int(y)}" for x, y in box.xyxyxyxy[0].tolist())
+        rows.append([image_path.name, CLASS_NAMES.get(cls_id, str(cls_id)), f"{score:.6f}", x1, y1, x2, y2, polygon])
     return rows
 
 
@@ -99,12 +106,12 @@ def main() -> None:
         if rows:
             summary_rows.extend(rows)
         else:
-            summary_rows.append([image_path.name, "no_detection", "0.000000", "", "", "", ""])
+            summary_rows.append([image_path.name, "no_detection", "0.000000", "", "", "", "", ""])
 
     summary_csv = args.output_dir / "summary.csv"
     with summary_csv.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["image", "predicted_class", "confidence", "x1", "y1", "x2", "y2"])
+        writer.writerow(["image", "predicted_class", "confidence", "x1", "y1", "x2", "y2", "polygon_xy"])
         writer.writerows(summary_rows)
 
     print(f"Sample tests saved to: {args.output_dir}")

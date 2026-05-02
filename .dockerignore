@@ -5,7 +5,6 @@
 !scripts/
 !scripts/api_server.py
 !scripts/depth_overlay.py
-!OBB_HA_HB/
-!OBB_HA_HB/results/
-!OBB_HA_HB/results/best.pt
-!OBB_HA_HB/results/last.pt
+!models/
+!models/obb_ha_hb_best.pt
+!models/obb_ha_hb_last.pt

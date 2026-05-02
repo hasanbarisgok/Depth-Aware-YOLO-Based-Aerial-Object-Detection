@@ -25,8 +25,8 @@ RUN python -m pip install --upgrade pip && \
 
 COPY scripts/api_server.py ./scripts/api_server.py
 COPY scripts/depth_overlay.py ./scripts/depth_overlay.py
-COPY OBB_HA_HB/results/best.pt ./models/obb_ha_hb_best.pt
-COPY OBB_HA_HB/results/last.pt ./models/obb_ha_hb_last.pt
+COPY models/obb_ha_hb_best.pt ./models/obb_ha_hb_best.pt
+COPY models/obb_ha_hb_last.pt ./models/obb_ha_hb_last.pt
 
 EXPOSE 8000
 

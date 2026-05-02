@@ -28,11 +28,19 @@ def main() -> None:
     cv2.imwrite(str(args.output), plotted)
 
     print(f"Saved detection image to: {args.output}")
-    for box in result.boxes:
+    boxes = result.obb if getattr(result, "obb", None) is not None else result.boxes
+    if boxes is None:
+        return
+
+    for box in boxes:
         cls_id = int(box.cls[0].item())
         conf = float(box.conf[0].item())
         x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
-        print(f"{model.names[cls_id]} | conf={conf:.4f} | bbox=[{x1}, {y1}, {x2}, {y2}]")
+        message = f"{model.names[cls_id]} | conf={conf:.4f} | bbox=[{x1}, {y1}, {x2}, {y2}]"
+        if getattr(result, "obb", None) is not None and hasattr(box, "xyxyxyxy"):
+            polygon = [[int(x), int(y)] for x, y in box.xyxyxyxy[0].tolist()]
+            message += f" | polygon={polygon}"
+        print(message)
 
 
 if __name__ == "__main__":
