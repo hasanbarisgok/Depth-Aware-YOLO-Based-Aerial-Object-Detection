@@ -40,6 +40,11 @@ class PredictionResponse(BaseModel):
     detections: list[DetectionItem]
     annotated_image_base64: str | None = None
     annotated_image_mime: str | None = None
+    depth_image_base64: str | None = None
+    depth_image_mime: str | None = None
+    combined_image_base64: str | None = None
+    combined_image_mime: str | None = None
+    depth_rendered: bool = False
 
 
 def encode_jpeg_base64(image_bgr: np.ndarray) -> str:
@@ -105,12 +110,43 @@ def cors_error_headers(request: Request, allowed_origins: list[str]) -> dict[str
     return {}
 
 
-def render_depth_colored_image(image_bgr: np.ndarray, result: Any, class_names: dict[int, str], model_name: str) -> np.ndarray:
+def make_title_panel(image_bgr: np.ndarray, title: str) -> np.ndarray:
+    title_height = max(56, round(image_bgr.shape[0] * 0.07))
+    panel = np.full((image_bgr.shape[0] + title_height, image_bgr.shape[1], 3), 255, dtype=np.uint8)
+    panel[title_height:, :] = image_bgr
+
+    font_scale = max(0.8, min(image_bgr.shape[:2]) / 520)
+    thickness = max(2, round(font_scale * 2))
+    text_size, _ = cv2.getTextSize(title, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+    text_x = max(0, (image_bgr.shape[1] - text_size[0]) // 2)
+    text_y = max(text_size[1] + 8, (title_height + text_size[1]) // 2)
+    cv2.putText(panel, title, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 0), thickness, cv2.LINE_AA)
+    return panel
+
+
+def build_combined_demo_image(original_bgr: np.ndarray, detected_bgr: np.ndarray, depth_bgr: np.ndarray) -> np.ndarray:
+    panels = [
+        make_title_panel(original_bgr, "Original"),
+        make_title_panel(detected_bgr, "YOLO Detection + pDepth Color"),
+        make_title_panel(depth_bgr, "Pseudo-depth"),
+    ]
+    return cv2.hconcat(panels)
+
+
+def render_depth_outputs(
+    image_bgr: np.ndarray,
+    result: Any,
+    class_names: dict[int, str],
+    model_name: str,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     estimator = get_depth_estimator(model_name)
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
     depth_prediction = estimator(Image.fromarray(image_rgb))
     depth_normalized = normalize_depth_map(depth_prediction["depth"], image_bgr.shape[:2])
-    return draw_depth_colored_detections(image_bgr, result, depth_normalized, class_names)
+    detected_bgr = draw_depth_colored_detections(image_bgr, result, depth_normalized, class_names)
+    depth_bgr = cv2.applyColorMap(depth_normalized, cv2.COLORMAP_INFERNO)
+    combined_bgr = build_combined_demo_image(image_bgr, detected_bgr, depth_bgr)
+    return detected_bgr, depth_bgr, combined_bgr
 
 
 def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
@@ -172,10 +208,21 @@ def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
 
         annotated_image_base64 = None
         annotated_image_mime = None
+        depth_image_base64 = None
+        depth_image_mime = None
+        combined_image_base64 = None
+        combined_image_mime = None
+        depth_rendered = False
         if render:
             if render_depth:
                 try:
-                    annotated_image = render_depth_colored_image(image_bgr, result, model.names, depth_model)
+                    detected_image, depth_image, combined_image = render_depth_outputs(image_bgr, result, model.names, depth_model)
+                    annotated_image = combined_image
+                    depth_image_base64 = encode_jpeg_base64(depth_image)
+                    depth_image_mime = "image/jpeg"
+                    combined_image_base64 = encode_jpeg_base64(combined_image)
+                    combined_image_mime = "image/jpeg"
+                    depth_rendered = True
                 except Exception:
                     annotated_image = result.plot()
             else:
@@ -191,6 +238,11 @@ def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
             detections=detections,
             annotated_image_base64=annotated_image_base64,
             annotated_image_mime=annotated_image_mime,
+            depth_image_base64=depth_image_base64,
+            depth_image_mime=depth_image_mime,
+            combined_image_base64=combined_image_base64,
+            combined_image_mime=combined_image_mime,
+            depth_rendered=depth_rendered,
         )
 
     @app.exception_handler(Exception)
