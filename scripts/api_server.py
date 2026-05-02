@@ -9,7 +9,7 @@ from typing import Any
 import cv2
 import numpy as np
 from PIL import Image
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -77,11 +77,32 @@ def normalize_detections(result: Any, class_names: dict[int, str]) -> list[Detec
 def get_depth_estimator(model_name: str) -> Any:
     if model_name not in _DEPTH_ESTIMATORS:
         try:
+            import torch  # noqa: F401
             from transformers import pipeline
         except ImportError as exc:
-            raise RuntimeError("Depth rendering requires the transformers package.") from exc
-        _DEPTH_ESTIMATORS[model_name] = pipeline(task="depth-estimation", model=model_name)
+            raise RuntimeError("Depth rendering requires the transformers and torch packages.") from exc
+        _DEPTH_ESTIMATORS[model_name] = pipeline(
+            task="depth-estimation",
+            model=model_name,
+            framework="pt",
+            device=-1,
+        )
     return _DEPTH_ESTIMATORS[model_name]
+
+
+def cors_error_headers(request: Request, allowed_origins: list[str]) -> dict[str, str]:
+    origin = request.headers.get("origin")
+    if not origin:
+        return {}
+
+    if "*" in allowed_origins or origin in allowed_origins:
+        return {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Vary": "Origin",
+        }
+
+    return {}
 
 
 def render_depth_colored_image(image_bgr: np.ndarray, result: Any, class_names: dict[int, str], model_name: str) -> np.ndarray:
@@ -153,7 +174,10 @@ def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
         annotated_image_mime = None
         if render:
             if render_depth:
-                annotated_image = render_depth_colored_image(image_bgr, result, model.names, depth_model)
+                try:
+                    annotated_image = render_depth_colored_image(image_bgr, result, model.names, depth_model)
+                except Exception:
+                    annotated_image = result.plot()
             else:
                 annotated_image = result.plot()
             annotated_image_base64 = encode_jpeg_base64(annotated_image)
@@ -170,8 +194,12 @@ def create_app(weights_path: Path, allowed_origins: list[str]) -> FastAPI:
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_exception_handler(_, exc: Exception) -> JSONResponse:
-        return JSONResponse(status_code=500, content={"detail": f"Internal server error: {exc}"})
+    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Internal server error: {exc}"},
+            headers=cors_error_headers(request, allowed_origins),
+        )
 
     return app
 
